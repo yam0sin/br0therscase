@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админка — Пользователи</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 30px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        input, select, button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        input, select {
+            background: #333;
+            color: #fff;
+        }
+
+        button {
+            background-color: #1e90ff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #444;
+            text-align: center;
+        }
+
+        th {
+            background-color: #1e90ff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #222;
+        }
+
+        tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        a.history-link {
+            color: #1e90ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            color: lightgreen;
+        }
+
+.table-history {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+.table-history th,
+.table-history td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+    line-height: 1.2;
+    height: 36px;
+}
+
+.table-history th {
+    background-color: #1e90ff;
+    color: #fff;
+    font-size: 15px;
+}
+
+.table-history tr:nth-child(even) {
+    background-color: #1a1a1a;
+}
+
+.table-history tr:hover {
+    background-color: #2a2a2a;
+}
+
+.table-history button {
+    padding: 2px 6px;
+    font-size: 12px;
+    background-color: #1e90ff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1;
+    height: 24px;
+}
+
+    </style>
+</head>
+<body>
+    <h1>Управление пользователями</h1>
+
+    <form method="post">
+        <h2>Добавить пользователя</h2>
+        <input type="text" name="username" placeholder="Логин" required>
+        <input type="password" name="password" placeholder="Пароль" required>
+        <input type="number" name="balance" placeholder="Баланс" required>
+        <button type="submit" name="add_user">Добавить</button>
+    </form>
+
+    <form method="post">
+        <h2>Изменить баланс</h2>
+        <select name="user_id" required>
+            <option value="">Выберите пользователя</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="new_balance" placeholder="Новый баланс" required>
+        <button type="submit" name="update_balance">Обновить</button>
+    </form>
+
+    {% if message %}
+        <p class="message">{{ message }}</p>
+    {% endif %}
+
+    <h2>Список пользователей</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Логин</th>
+            <th>Баланс</th>
+            <th>История</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.balance }}₽</td>
+            <td><a class="history-link" href="/admin/user/{{ user.id }}/history">Открытия</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>История открытий пользователей</h2>
+<table class="table-history">
+    <tr>
+        <th>Пользователь</th>
+        <th>Скин</th>
+        <th>Качество</th>
+        <th>Дата</th>
+        <th>Выдан</th>
+        <th>Действие</th>
+    </tr>
+    {% for drop in all_drops %}
+    <tr>
+        <td>{{ drop.user.username }}</td>
+        <td>{{ drop.skin.name }}</td>
+        <td>{{ drop.skin.quality or 'Неизвестно' }}</td>
+        <td>{{ drop.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td>{{ 'Да' if drop.issued else 'Нет' }}</td>
+        <td>
+            {% if not drop.issued %}
+            <form method="post" style="display:inline;">
+                <input type="hidden" name="mark_issued_id" value="{{ drop.id }}">
+                <button type="submit">Выдан</button>
+            </form>
+            {% else %}
+            <span style="color: lightgreen;">✓</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

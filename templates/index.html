@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Br0thersCase</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #111;
+            background-image: url('/static/bg-pattern.png'); /* путь к твоему фону */
+            background-repeat: repeat;
+            background-size: auto;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: #222;
+        }
+
+        .logo {
+            font-size: 24px;
+        }
+
+        .user-panel button {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .case-button {
+            margin: 40px auto 20px;
+            padding: 18px 40px;
+            font-size: 22px;
+            background-color: #1e90ff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+.roller-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: 40px 0;
+}
+
+.roller-container {
+    width: 980px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-top: 3px solid #1e90ff;
+    border-bottom: 3px solid #1e90ff;
+    height: 160px;
+    position: relative; /* обязательно */
+}
+
+.roller-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    background: #1e90ff;
+    z-index: 10;
+    pointer-events: none;
+}
+
+
+
+
+#skinStrip {
+    display: flex;
+    transition: transform 5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+
+        .skin-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 130px;
+            height: 130px;
+            margin: 15px 5px;
+            border-radius: 8px;
+        }
+
+        .skin-box img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .rarity-Ширпотреб { background: #e6e6e6; color: #000; }
+        .rarity-Промышленное { background: #b3e5fc; color: #000; }
+        .rarity-Армейское { background: #5c6bc0; color: #fff; }
+        .rarity-Запрещённое { background: #7e57c2; color: #fff; }
+        .rarity-Засекреченное { background: #ba68c8; color: #fff; }
+        .rarity-Тайное { background: #8b0000; color: #fff; }
+
+
+        .skin-drop {
+            margin-top: 30px;
+        }
+
+        #loginModal {
+            display: none;
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #222;
+            padding: 20px;
+            border: 1px solid #555;
+        }
+
+        #loginModal input {
+            margin: 5px;
+            padding: 5px;
+        }
+
+        .case-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 30px auto;
+}
+
+@keyframes pulse-glow {
+    0% {
+        filter: drop-shadow(0 0 10px rgba(30, 144, 255, 0.3));
+    }
+    50% {
+        filter: drop-shadow(0 0 25px rgba(30, 144, 255, 0.8));
+    }
+    100% {
+        filter: drop-shadow(0 0 10px rgba(30, 144, 255, 0.3));
+    }
+}
+
+
+.case-image {
+    width: 240px;
+    margin-bottom: 15px;
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+
+    .final-drop {
+    background: #1b1b1b;
+    border-radius: 10px;
+    display: inline-block;
+    padding: 20px;
+    margin-top: 30px;
+    box-shadow: 0 0 15px rgba(30,144,255,0.3);
+    animation: fadeInScale 0.5s ease;
+}
+
+.final-drop h2 {
+    font-size: 22px;
+    margin-bottom: 10px;
+    color: #fff !important;
+}
+
+
+.final-drop p {
+    font-size: 16px;
+    color: #fff !important;
+    margin-bottom: 10px;
+}
+
+.final-drop img {
+    width: 200px;
+    border-radius: 6px;
+}
+
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Анимация пульсации */
+@keyframes glowPulse {
+    0% { box-shadow: 0 0 8px rgba(255,255,255,0.1); }
+    50% { box-shadow: 0 0 20px rgba(255,255,255,0.8); }
+    100% { box-shadow: 0 0 8px rgba(255,255,255,0.1); }
+}
+
+/* Подсветка по редкости */
+.final-drop.rarity-Ширпотреб {
+    box-shadow: 0 0 10px #e6e6e6;
+    animation: glowPulse 3s infinite ease-in-out;
+}
+.final-drop.rarity-Промышленное {
+    box-shadow: 0 0 12px #b3e5fc;
+    animation: glowPulse 3s infinite ease-in-out;
+}
+.final-drop.rarity-Армейское {
+    box-shadow: 0 0 14px #5c6bc0;
+    animation: glowPulse 2.8s infinite ease-in-out;
+}
+.final-drop.rarity-Запрещённое {
+    box-shadow: 0 0 16px #7e57c2;
+    animation: glowPulse 2.5s infinite ease-in-out;
+}
+.final-drop.rarity-Засекреченное {
+    box-shadow: 0 0 18px #ba68c8;
+    animation: glowPulse 2.2s infinite ease-in-out;
+}
+.final-drop.rarity-Тайное {
+    box-shadow: 0 0 24px #8b0000;
+    animation: glowPulse 2s infinite ease-in-out;
+}
+
+/* Подсветка изображения по редкости */
+.final-drop.rarity-Ширпотреб img {
+    filter: drop-shadow(0 0 10px #e6e6e6);
+}
+.final-drop.rarity-Промышленное img {
+    filter: drop-shadow(0 0 12px #b3e5fc);
+}
+.final-drop.rarity-Армейское img {
+    filter: drop-shadow(0 0 14px #5c6bc0);
+}
+.final-drop.rarity-Запрещённое img {
+    filter: drop-shadow(0 0 16px #7e57c2);
+}
+.final-drop.rarity-Засекреченное img {
+    filter: drop-shadow(0 0 18px #ba68c8);
+}
+.final-drop.rarity-Тайное img {
+    filter: drop-shadow(0 0 22px #8b0000);
+}
+
+/* Модальное окно */
+.modal-drop {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1b1b1b;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 25px rgba(255,255,255,0.3);
+    z-index: 9999;
+    animation: fadeInScale 0.4s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.modal-drop h2 {
+    margin-bottom: 10px;
+    font-size: 22px;
+    color: #fff; /* теперь будет белым */
+}
+
+.modal-drop p {
+    font-size: 16px;
+    color: #ccc;
+    margin-bottom: 10px;
+}
+
+.modal-drop img {
+    width: 240px;
+    border-radius: 6px;
+}
+
+/* Подсветка изображения в модалке по редкости */
+.modal-drop.rarity-Ширпотреб img {
+    filter: drop-shadow(0 0 10px #e6e6e6);
+}
+.modal-drop.rarity-Промышленное img {
+    filter: drop-shadow(0 0 12px #b3e5fc);
+}
+.modal-drop.rarity-Армейское img {
+    filter: drop-shadow(0 0 14px #5c6bc0);
+}
+.modal-drop.rarity-Запрещённое img {
+    filter: drop-shadow(0 0 16px #7e57c2);
+}
+.modal-drop.rarity-Засекреченное img {
+    filter: drop-shadow(0 0 18px #ba68c8);
+}
+.modal-drop.rarity-Тайное img {
+    filter: drop-shadow(0 0 22px #8b0000);
+}
+
+
+.modal-drop .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+#modalDrop {
+    opacity: 0;
+    visibility: hidden;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1b1b1b;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 25px rgba(255,255,255,0.3);
+    z-index: 9999;
+    animation: fadeInScale 0.4s ease;
+    max-width: 90%;
+    text-align: center;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#modalDrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="logo">Br0thers Case</div>
+    <div class="user-panel" id="userPanel">
+        <button onclick="openLogin()">Войти</button>
+    </div>
+</div>
+
+<div class="case-block">
+    <img src="/static/case.png" alt="Кейс" class="case-image">
+    <button class="case-button" onclick="openCase()">Открыть кейс (10 очков)</button>
+</div>
+
+
+<div class="roller-wrapper">
+    <div class="roller-container" id="roller" style="visibility: hidden; opacity: 0;">
+        <div class="roller-line"></div> <!-- Добавили сюда -->
+        <div id="skinStrip"></div>
+    </div>
+</div>
+
+<div id="result" class="skin-drop"></div>
+
+<div id="loginModal">
+    <h3>Вход</h3>
+    <input type="text" id="loginUsername" placeholder="Логин"><br>
+    <input type="password" id="loginPassword" placeholder="Пароль"><br>
+    <button onclick="login()">Войти</button>
+    <button onclick="closeLogin()">Закрыть</button>
+</div>
+
+<script>
+async function openCase() {
+    const roller = document.getElementById('roller');
+    const strip = document.getElementById('skinStrip');
+    const resultDiv = document.getElementById('result');
+
+    const res = await fetch('/open_case', { method: 'POST' });
+    const data = await res.json();
+
+    if (!res.ok) {
+        resultDiv.innerHTML = `<p>${data.message}</p>`;
+        return;
+    }
+
+    const skinsRes = await fetch('/animation_skins');
+    const skinsData = await skinsRes.json();
+
+    strip.innerHTML = '';
+    roller.style.visibility = 'visible';
+    roller.style.opacity = '1';
+    resultDiv.innerHTML = '';
+
+    const baseWinIndex = 44;
+    const bufferCount = 10;
+    const winIndex = baseWinIndex + bufferCount;
+
+    const skinList = [];
+
+    // Буфер до
+    for (let i = 0; i < bufferCount; i++) {
+        skinList.push(skinsData[Math.floor(Math.random() * skinsData.length)]);
+    }
+
+    // 44 случайных
+    for (let i = 0; i < baseWinIndex; i++) {
+        skinList.push(skinsData[Math.floor(Math.random() * skinsData.length)]);
+    }
+
+    // Вставляем выигрышный скин
+    skinList.splice(winIndex, 0, data.skin);
+
+    // Буфер после
+    for (let i = 0; i < bufferCount; i++) {
+        skinList.push(skinsData[Math.floor(Math.random() * skinsData.length)]);
+    }
+
+    // Рендер ленты
+    strip.innerHTML = skinList.map(skin => `
+        <div class="skin-box rarity-${skin.rarity}">
+            <img src="${skin.image_url}" alt="">
+        </div>
+    `).join('');
+
+    const skinWidth = 140;
+    strip.style.width = `${skinList.length * skinWidth}px`;
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateX(0)';
+
+    // Анимация
+    setTimeout(() => {
+        strip.style.transition = 'transform 5s cubic-bezier(0.25, 1, 0.5, 1)';
+        const offset = -(winIndex * skinWidth + skinWidth / 2 - roller.offsetWidth / 2);
+        strip.style.transform = `translateX(${offset}px)`;
+    }, 50);
+
+    // Показываем результат после анимации
+    setTimeout(() => {
+    const modal = document.getElementById('modalDrop');
+    modal.className = `modal-drop rarity-${data.skin.rarity}`;
+    modal.innerHTML = `
+        <button class="close-btn" onclick="closeModal()">×</button>
+        <h2>Выпал скин: ${data.skin.name}</h2>
+        <p>Качество: ${data.skin.quality || 'Неизвестно'}</p>
+        <img src="${data.skin.image_url}" alt="${data.skin.name}">
+    `;
+    modal.classList.add('active');
+
+    getUser();
+}, 5200);
+
+
+}
+
+function openLogin() {
+    document.getElementById('loginModal').style.display = 'block';
+}
+
+function closeLogin() {
+    document.getElementById('loginModal').style.display = 'none';
+}
+
+async function login() {
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+        closeLogin();
+        getUser(); // получаем логин и баланс
+    } else {
+        alert(data.message);
+    }
+}
+
+async function getUser() {
+    const res = await fetch('/me');
+    const data = await res.json();
+
+    const panel = document.getElementById('userPanel');
+
+    if (data.logged_in) {
+        panel.innerHTML = `
+            <div style="display:flex; align-items:center; gap: 10px;">
+                <a href="/history" style="font-weight: bold; color: white; text-decoration: none;">${data.username}</a>
+                <span>${data.balance} очков</span>
+                <button onclick="logout()">Выйти</button>
+            </div>
+        `;
+    } else {
+        panel.innerHTML = `<button onclick="openLogin()">Войти</button>`;
+    }
+}
+
+async function logout() {
+    await fetch('/logout', { method: 'POST' });
+    getUser();
+}
+
+function closeModal() {
+    document.getElementById('modalDrop').classList.remove('active');
+}
+
+window.addEventListener('DOMContentLoaded', getUser);
+</script>
+
+<!-- Вставляем модалку вот сюда -->
+<div id="modalDrop"></div>
+
+</body>
+</html>

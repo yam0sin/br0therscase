@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>История открытий</title>
+    <style>
+        body {
+    background-color: #111;
+    background-image: url('/static/bg-pattern.png');
+    background-repeat: repeat;
+    background-size: auto;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .drop-history {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .drop-card {
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            width: 220px;
+            text-align: center;
+        }
+
+        .drop-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .rarity-Ширпотреб { border-left: 5px solid #d9d9d9; }       /* Светло-серый */
+        .rarity-Промышленное { border-left: 5px solid #b3e5fc; }     /* Голубой */
+    .rarity-Армейское { border-left: 5px solid #5c6bc0; }        /* Синий */
+    .rarity-Запрещённое { border-left: 5px solid #7e57c2; }      /* Фиолетовый */
+    .rarity-Засекреченное { border-left: 5px solid #ba68c8; }    /* Розово-фиолетовый */
+    .rarity-Тайное { border-left: 5px solid #8b0000; }           /* Тёмно-красный */
+
+    </style>
+</head>
+<body>
+    <div style="text-align: center; margin-top: 40px;">
+    <a href="/" style="
+        background-color: #1e90ff;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 16px;
+        display: inline-block;
+    ">Вернуться на главную</a>
+</div>
+    <h1>История открытий — {{ user.username }}</h1>
+    <div class="drop-history">
+        {% for drop in drops %}
+            <div class="drop-card rarity-{{ drop.skin.rarity }}">
+                <img src="{{ drop.skin.image_url }}" alt="skin">
+                <h3>{{ drop.skin.name }}</h3>
+                <p>Качество: {{ drop.skin.quality }}</p>
+{% if drop.issued %}
+<p style="color: #00ff99; font-weight: bold;">Выдан вручную</p>
+{% endif %}
+                <p><small>{{ drop.timestamp.strftime('%d.%m.%Y %H:%M') }}</small></p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
