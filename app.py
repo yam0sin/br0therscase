@@ -39,6 +39,15 @@ class Drop(db.Model):
     user = db.relationship('User', backref='drops')
     skin = db.relationship('Skin')
 
+# ВСТАВЬ СЮДА
+with app.app_context():
+    admin = User.query.filter_by(username='admin').first()
+    if admin:
+        from werkzeug.security import generate_password_hash
+        admin.password_hash = generate_password_hash("1337228")
+        db.session.commit()
+        print("[INFO] Пароль администратора обновлён.")
+
 # 🔄 Функция отправки в Google Таблицу
 def send_to_google_sheet(user, dropped_skin):
     """Отправляет информацию о выпадении в Google Таблицу"""
