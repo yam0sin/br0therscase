@@ -1,64 +1,62 @@
 from flask import Flask, request, jsonify, session, render_template, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+# from flask_sqlalchemy import SQLAlchemy
+# from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import random
 import os
 
+import requests
+
+BASE_URL = 'https://script.google.com/macros/s/AKfycbwoI6PHGp_UqOMbnUrO3kiyBVUJi4Ur8yG5jktU60LWcXF1IsNS8tkxelWLXCl14TwXlg/exec'
+
+SHEET_SKINS_URL = BASE_URL + '?type=skins'
+SHEET_USER_URL = BASE_URL + '?type=users'
+SHEET_HISTORY_URL = BASE_URL + '?type=history'
+
+def load_users_from_sheet():
+    try:
+        response = requests.get(SHEET_USER_URL)
+        data = response.json()
+        return [
+            {
+                'username': row['Пользователь'],
+                'password': row['Пароль'],
+                'balance': int(row['Баланс'])
+            }
+            for row in data if 'Пользователь' in row
+        ]
+    except Exception as e:
+        print("[ERROR] Ошибка при загрузке пользователей:", e)
+        return []
+
+def update_user_balance(username, new_balance):
+    try:
+        requests.post(SHEET_USER_URL, json={
+            "action": "update_balance",
+            "username": username,
+            "new_balance": new_balance
+        })
+    except Exception as e:
+        print("[WARN] Не удалось обновить баланс:", e)
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    balance = db.Column(db.Integer, default=100)
-
-class Skin(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    rarity = db.Column(db.String(20), nullable=False)
-    quality = db.Column(db.String(50), nullable=True)
-    quantity = db.Column(db.Integer, default=1)
-    image_url = db.Column(db.String(255), nullable=True)
-    available = db.Column(db.Boolean, default=True)
-
-class Drop(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    skin_id = db.Column(db.Integer, db.ForeignKey('skin.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    issued = db.Column(db.Boolean, default=False)  # <- вот это добавь
-
-    user = db.relationship('User', backref='drops')
-    skin = db.relationship('Skin')
-
-# ВСТАВЬ СЮДА
-with app.app_context():
-    admin = User.query.filter_by(username='admin').first()
-    if admin:
-        from werkzeug.security import generate_password_hash
-        admin.password_hash = generate_password_hash("1337228")
-        db.session.commit()
-        print("[INFO] Пароль администратора обновлён.")
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # 🔄 Функция отправки в Google Таблицу
 def send_to_google_sheet(user, dropped_skin):
-    """Отправляет информацию о выпадении в Google Таблицу"""
+    print("DROPPED SKIN:", dropped_skin)
     try:
         requests.post(
-            'https://script.google.com/macros/s/AKfycbw4a-LVhk-Q3ZcjigsiUvSfhSNonw4BeXHQaJbBDvKL-aPAu-CbaW7ncfWRbJH65KBr_A/exec',
+            SHEET_SKINS_URL,
             json={
-                "username": user.username,
-                "skin": dropped_skin['name'],
-                "rarity": dropped_skin['rarity'],
-                "quality": dropped_skin.get('quality', '')
+                "username": user['username'],
+                "skin": dropped_skin['Скин'],
+                "rarity": dropped_skin['Редкость'],
+                "quality": dropped_skin.get('Качество', ''),
+                "image_url": dropped_skin.get('Фотография', '')  # ← оставляем 'Фотография', если именно так в скинах
             }
         )
     except Exception as e:
@@ -66,17 +64,35 @@ def send_to_google_sheet(user, dropped_skin):
 
 @app.route('/')
 def home():
-    skins = Skin.query.filter_by(available=True).all()
-    return render_template('index.html', skins=skins)
+    return render_template('index.html')
 
 @app.route('/history')
 def history():
-    user_id = session.get('user_id')
-    if not user_id:
+    username = session.get('user_id')
+    if not username:
         return redirect(url_for('home'))
-    user = User.query.get(user_id)
-    drops = Drop.query.filter_by(user_id=user.id).order_by(Drop.timestamp.desc()).all()
-    return render_template('history.html', user=user, drops=drops)
+
+    try:
+        response = requests.get(SHEET_HISTORY_URL)
+        sheet_data = response.json()
+    except Exception as e:
+        print("[ERROR] Не удалось загрузить историю:", e)
+        sheet_data = []
+
+    user_drops = []
+    for row in sheet_data:
+        if row.get('Пользователь') == username:
+            user_drops.append({
+                'skin': row.get('Скин'),
+                'rarity': row.get('Редкость'),
+                'quality': row.get('Качество'),
+                'image_url': row.get('Фотография', ''),
+                'timestamp': row.get('Дата', ''),
+                'status': row.get('Статус', '')
+            })
+
+
+    return render_template('history.html', user={'username': username}, drops=user_drops[::-1])
 
 @app.route('/admin/users', methods=['GET', 'POST'])
 def admin_users():
@@ -126,9 +142,10 @@ def admin_users():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.query.filter_by(username=data['username']).first()
-    if user and check_password_hash(user.password_hash, data['password']):
-        session['user_id'] = user.id
+    sheet_users = load_users_from_sheet()
+    user = next((u for u in sheet_users if u['username'] == data['username'] and u['password'] == data['password']), None)
+    if user:
+        session['user_id'] = user['username']  # теперь в сессии имя
         return jsonify({'message': 'Login successful'})
     return jsonify({'message': 'Invalid credentials'}), 401
 
@@ -139,20 +156,26 @@ def logout():
 
 @app.route('/me')
 def me():
-    user_id = session.get('user_id')
-    if not user_id:
+    username = session.get('user_id')
+    if not username:
         return jsonify({'logged_in': False})
-    user = User.query.get(user_id)
-    return jsonify({'logged_in': True, 'username': user.username, 'balance': user.balance})
+    users = load_users_from_sheet()
+    user = next((u for u in users if u['username'] == username), None)
+    if user:
+        return jsonify({'logged_in': True, 'username': user['username'], 'balance': user['balance']})
+    return jsonify({'logged_in': False})
 
 import requests
 
 @app.route('/open_case', methods=['POST'])
 def open_case():
-    user = User.query.get(session.get('user_id'))
+    username = session.get('user_id')
+    sheet_users = load_users_from_sheet()
+    user = next((u for u in sheet_users if u['username'] == username), None)
     if not user:
         return jsonify({'message': 'Unauthorized'}), 401
-    if user.balance < 10 and user.username != 'admin':
+
+    if user['balance'] < 10 and user['username'] != 'admin':
         return jsonify({'message': 'Insufficient balance'}), 400
 
     # Редкости и шансы
@@ -166,7 +189,7 @@ def open_case():
     }
 
     # Получаем скины из Google Таблицы
-    url = 'https://script.google.com/macros/s/AKfycbyu09I8nWtNgEw7QOwHPG9pwlSZa_GVXm6od8i2DfNefShjMYl-E0Y1qZXzr1oCVLWiaQ/exec'
+    url = SHEET_SKINS_URL
     try:
         response = requests.get(url)
         sheet_data = response.json()
@@ -176,9 +199,10 @@ def open_case():
     # Группировка по редкости
     rarity_buckets = {r: [] for r in rarity_weights}
     for row in sheet_data:
-        name = row.get('name', '').strip()
-        rarity = row.get('rarity', '').strip()
-        image = row.get('image_url', '').strip()
+        name = row.get('Скин', '').strip()
+        rarity = row.get('Редкость', '').strip()
+        image = row.get('Фотография', '').strip()
+
         if name and rarity and image and rarity in rarity_buckets:
             rarity_buckets[rarity].append(row)
 
@@ -191,46 +215,45 @@ def open_case():
     dropped_skin = random.choice(rarity_buckets[chosen_rarity])
 
     # Если не админ — уменьшаем и сохраняем
-    if user.username != 'admin':
-        user.balance -= 10
+    if user['username'] != 'admin':
+        new_balance = user['balance'] - 10
+        update_user_balance(user['username'], new_balance)
 
-        db_skin = Skin.query.filter_by(name=dropped_skin['name']).first()
-        if not db_skin:
-            db_skin = Skin(
-                name=dropped_skin['name'],
-                rarity=dropped_skin['rarity'],
-                quality=dropped_skin.get('quality', ''),
-                image_url=dropped_skin['image_url'],
-                quantity=1,
-                available=False
-            )
-            db.session.add(db_skin)
-            db.session.flush()
-        else:
-            db_skin.quantity -= 1
-            if db_skin.quantity <= 0:
-                db_skin.available = False
-
-        drop = Drop(user_id=user.id, skin_id=db_skin.id)
-        db.session.add(drop)
+#        db_skin = Skin.query.filter_by(name=dropped_skin['name']).first()
+#       if not db_skin:
+#           db_skin = Skin(
+#               name=dropped_skin['name'],
+#               rarity=dropped_skin['rarity'],
+#               quality=dropped_skin.get('quality', ''),
+#               image_url=dropped_skin['image_url'],
+#               quantity=1,
+#               available=False
+#           )
+#           db.session.add(db_skin)
+#           db.session.flush()
+#       else:
+#           db_skin.quantity -= 1
+#           if db_skin.quantity <= 0:
+#               db_skin.available = False
+#        drop = Drop(user_id=user.id, skin_id=db_skin.id)
+#        db.session.add(drop)
 
         # Отправляем в Google Таблицу
         send_to_google_sheet(user, dropped_skin)
-
-    # Сохраняем изменения
-    db.session.commit()
 
     # Отдаём скин на фронт
     return jsonify({
         'message': 'Skin dropped!',
         'skin': {
-            'name': dropped_skin['name'],
-            'rarity': dropped_skin['rarity'],
-            'image_url': dropped_skin['image_url'],
-            'quality': dropped_skin.get('quality', '')
+            'name': dropped_skin['Скин'],
+            'rarity': dropped_skin['Редкость'],
+            'image_url': dropped_skin['Фотография'],
+         'quality': dropped_skin.get('Качество', '')
         },
-        'balance': user.balance
+        'balance': new_balance if user['username'] != 'admin' else user['balance']
     })
+
+
 
 
 
@@ -241,7 +264,7 @@ import requests
 
 @app.route('/animation_skins')
 def animation_skins():
-    url = 'https://script.google.com/macros/s/AKfycbyu09I8nWtNgEw7QOwHPG9pwlSZa_GVXm6od8i2DfNefShjMYl-E0Y1qZXzr1oCVLWiaQ/exec'
+    url = SHEET_SKINS_URL
     try:
         response = requests.get(url)
         data = response.json()
@@ -250,12 +273,12 @@ def animation_skins():
 
     skins = []
     for row in data:
-        if 'name' in row and 'rarity' in row and 'image_url' in row:
+        if 'Скин' in row and 'Редкость' in row and 'Фотография' in row:
             skins.append({
-                'name': row['name'],
-                'rarity': row['rarity'],
-                'image_url': row['image_url'],
-                'quality': row.get('quality', '')
+                'name': row['Скин'],
+                'rarity': row['Редкость'],
+                'image_url': row['Фотография'],
+                'quality': row.get('Качество', '')
             })
 
 
@@ -268,8 +291,78 @@ def admin_user_history(user_id):
     drops = Drop.query.filter_by(user_id=user.id).order_by(Drop.timestamp.desc()).all()
     return render_template('admin_user_history.html', user=user, drops=drops)
 
+@app.route('/sell_skin', methods=['POST'])
+def sell_skin():
+    username = session.get('user_id')
+    if not username:
+        return jsonify({'message': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    skin_name = data.get('skin')
+    quality = data.get('quality')
+
+    try:
+        # 1. Загружаем данные
+        skins = requests.get(SHEET_SKINS_URL).json()
+        users = load_users_from_sheet()
+        history = requests.get(SHEET_HISTORY_URL).json()
+    except Exception as e:
+        return jsonify({'message': 'Ошибка загрузки данных', 'error': str(e)}), 500
+
+    user = next((u for u in users if u['username'] == username), None)
+    if not user:
+        return jsonify({'message': 'Пользователь не найден'}), 404
+
+    # 2. Ищем цену
+    matched_skin = next((s for s in skins if s['Скин'] == skin_name and s['Качество'] == quality), None)
+    if not matched_skin or not matched_skin.get('Цена'):
+        return jsonify({'message': 'Скин не найден или нет цены'}), 404
+
+    try:
+        price = float(str(matched_skin['Цена']).replace(',', '.'))
+    except:
+        return jsonify({'message': 'Неверный формат цены'}), 400
+
+    # 3. Проверка на проданный скин
+    for i, row in enumerate(history):
+        if (
+            row.get('Пользователь') == username and
+            row.get('Скин') == skin_name and
+            row.get('Качество') == quality and
+            (row.get('Статус', '') != 'Продан')
+        ):
+            # 4. Обновляем баланс
+            new_balance = user['balance'] + price
+            update_user_balance(username, new_balance)
+
+            # 5. Увеличиваем количество скина
+            print("[POST] return_skin", skin_name, quality)
+            try:
+                requests.post(SHEET_SKINS_URL, json={
+                    "action": "return_skin",
+                    "skin": skin_name,
+                    "quality": quality
+                })
+            except Exception as e:
+                print("[WARN] Ошибка при возврате скина:", e)
+
+            # 6. Отмечаем скин как проданный в истории
+            print("[POST] mark_sold", username, skin_name, quality, row.get('Дата', ''))
+            try:
+                requests.post(SHEET_HISTORY_URL, json={
+                "action": "mark_sold",
+                "username": username,
+                "skin": skin_name,
+                "quality": quality,
+                "timestamp": row.get('Дата', '')
+                })
+            except Exception as e:
+                print("[WARN] Ошибка при пометке как продано:", e)
+
+
+            return jsonify({'message': f'Скин продан за {price:.2f}!'})
+
+    return jsonify({'message': 'Скин не найден или уже продан'}), 400
+
 if __name__ == '__main__':
-    with app.app_context():
-        from flask_migrate import upgrade
-        upgrade()
     app.run(debug=True)

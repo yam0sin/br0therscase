@@ -50,10 +50,75 @@
     .rarity-Запрещённое { border-left: 5px solid #7e57c2; }      /* Фиолетовый */
     .rarity-Засекреченное { border-left: 5px solid #ba68c8; }    /* Розово-фиолетовый */
     .rarity-Тайное { border-left: 5px solid #8b0000; }           /* Тёмно-красный */
-
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #1d1d1d;
+  color: white;
+  font-family: sans-serif;
+}
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+}
+.user-panel {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.user-panel button {
+  background: #444;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.user-panel a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+}
+.modal-content {
+  background-color: #1e1e1e;
+  color: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px #000;
+  text-align: center;
+  font-size: 18px;
+  position: relative;
+}
+.modal-content .close {
+  position: absolute;
+  right: 12px;
+  top: 6px;
+  color: #ccc;
+  font-size: 22px;
+  cursor: pointer;
+}
     </style>
 </head>
 <body>
+    <div class="header">
+  <div class="logo">Br0thers Case</div>
+  <div class="user-panel" id="userPanel">
+    <!-- сюда подставляется логин и кнопки -->
+  </div>
+</div>
     <div style="text-align: center; margin-top: 40px;">
     <a href="/" style="
         background-color: #1e90ff;
@@ -68,16 +133,102 @@
     <h1>История открытий — {{ user.username }}</h1>
     <div class="drop-history">
         {% for drop in drops %}
-            <div class="drop-card rarity-{{ drop.skin.rarity }}">
-                <img src="{{ drop.skin.image_url }}" alt="skin">
-                <h3>{{ drop.skin.name }}</h3>
-                <p>Качество: {{ drop.skin.quality }}</p>
-{% if drop.issued %}
-<p style="color: #00ff99; font-weight: bold;">Выдан вручную</p>
-{% endif %}
-                <p><small>{{ drop.timestamp.strftime('%d.%m.%Y %H:%M') }}</small></p>
-            </div>
-        {% endfor %}
+<div class="drop-card rarity-{{ drop.rarity }}">
+    <img src="{{ drop.image_url }}" alt="skin">
+    <h3>{{ drop.skin }}</h3>
+    <p>Качество: {{ drop.quality }}</p>
+    <p><small>{{ drop.timestamp }}</small></p>
+
+    {% if drop.status != 'Продан' %}
+        <button onclick="sellSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">
+            Продать
+        </button>
+    {% else %}
+        <span style="color: lightgreen; font-weight: bold;">Продано</span>
+    {% endif %}
+</div>
+{% endfor %}
     </div>
+<!-- Модальное окно -->
+<div id="sellModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeSellModal()">&times;</span>
+    <p id="sellResultText">Скин продан!</p>
+  </div>
+</div>
+<script>   
+let isSelling = false;
+
+function sellSkin(skin, quality, timestamp) {
+  if (isSelling) return;
+  isSelling = true;
+
+  fetch('/sell_skin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skin, quality, timestamp })
+  })
+
+  .then(res => res.json())
+  .then(data => {
+    showSellModal(data.message);
+
+    // Найти карточку и заменить кнопку на "Продано"
+    const allCards = document.querySelectorAll('.drop-card');
+    for (const card of allCards) {
+      const name = card.querySelector('h3')?.innerText;
+      const qual = card.querySelector('p')?.innerText;
+      if (name === skin && qual.includes(quality)) {
+        const btn = card.querySelector('button');
+        if (btn) btn.remove();
+
+        const soldLabel = document.createElement('span');
+        soldLabel.innerText = "Продано";
+        soldLabel.style.color = 'lightgreen';
+        soldLabel.style.fontWeight = 'bold';
+        card.appendChild(soldLabel);
+      }
+    }
+
+    getUser(); // обновить баланс
+  });
+}
+
+function showSellModal(text) {
+  const modal = document.getElementById('sellModal');
+  const content = document.getElementById('sellResultText');
+  content.innerText = text;
+  modal.style.display = 'flex';
+}
+
+function closeSellModal() {
+  document.getElementById('sellModal').style.display = 'none';
+}
+
+async function getUser() {
+  const res = await fetch('/me');
+  const data = await res.json();
+
+  const panel = document.getElementById('userPanel');
+  if (!panel) return;
+
+  if (data.logged_in) {
+    panel.innerHTML = `
+      <a href="/history">${data.username}</a>
+      <span>${data.balance} очков</span>
+      <button onclick="logout()">Выйти</button>
+    `;
+  } else {
+    panel.innerHTML = `<button onclick="openLogin()">Войти</button>`;
+  }
+}
+
+async function logout() {
+  await fetch('/logout', { method: 'POST' });
+  window.location.href = '/';
+}
+
+window.addEventListener('DOMContentLoaded', getUser);
+</script>
 </body>
 </html>
