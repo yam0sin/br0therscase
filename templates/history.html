@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <title>История открытий</title>
     <style>
-        body {
-    background-color: #111;
-    background-image: url('/static/bg-pattern.png');
-    background-repeat: repeat;
-    background-size: auto;
+      body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, #071eb3, #9b00ff);
+    background-attachment: fixed;
     color: #fff;
-    font-family: 'Segoe UI', sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 0;
+    text-align: center;
 }
+
 
 
 
@@ -58,10 +58,6 @@
   background-color: #1d1d1d;
   color: white;
   font-family: sans-serif;
-}
-.logo {
-  font-size: 20px;
-  font-weight: bold;
 }
 .user-panel {
   display: flex;
@@ -110,25 +106,63 @@
   font-size: 22px;
   cursor: pointer;
 }
+
+.header {
+    width: 100%;
+    padding: 20px 40px;
+    box-sizing: border-box;
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.logo {
+    font-size: 28px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+}
+
+.button {
+    background: linear-gradient(135deg, #4600ff, #9b00ff);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    padding: 14px 28px;
+    font-size: 16px;
+    box-shadow: 0 0 14px rgba(0,0,0,0.3);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+.button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #5d22ff, #b700ff);
+}
+
+
     </style>
 </head>
 <body>
-    <div class="header">
-  <div class="logo">Br0thers Case</div>
-  <div class="user-panel" id="userPanel">
-    <!-- сюда подставляется логин и кнопки -->
-  </div>
+<div class="header">
+    <div class="header-inner">
+        <div class="logo">br0therscase</div>
+        <div class="user-panel" id="userPanel">
+            <!-- сюда подставится ник/баланс/выход -->
+        </div>
+    </div>
 </div>
     <div style="text-align: center; margin-top: 40px;">
-    <a href="/" style="
-        background-color: #1e90ff;
-        color: white;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 6px;
-        font-size: 16px;
-        display: inline-block;
-    ">Вернуться на главную</a>
+    <a href="/" class="button">Вернуться на главную</a>
 </div>
     <h1>История открытий — {{ user.username }}</h1>
     <div class="drop-history">
@@ -139,13 +173,14 @@
     <p>Качество: {{ drop.quality }}</p>
     <p><small>{{ drop.timestamp }}</small></p>
 
-    {% if drop.status != 'Продан' %}
-        <button onclick="sellSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">
-            Продать
-        </button>
-    {% else %}
-        <span style="color: lightgreen; font-weight: bold;">Продано</span>
-    {% endif %}
+{% if drop.status != 'Продан' and drop.status != 'Вывод' %}
+    <button onclick="sellSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">Продать</button>
+    <button onclick="withdrawSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">Вывести</button>
+{% elif drop.status == 'Продан' %}
+    <span style="color: lightgreen; font-weight: bold;">Продано</span>
+{% elif drop.status == 'Вывод' %}
+    <span style="color: #1e90ff; font-weight: bold;">Вывод</span>
+{% endif %}
 </div>
 {% endfor %}
     </div>
@@ -158,6 +193,40 @@
 </div>
 <script>   
 let isSelling = false;
+
+function withdrawSkin(skin, quality, timestamp) {
+  if (isSelling) return;
+  isSelling = true;
+
+  fetch('/withdraw_skin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skin, quality, timestamp })
+  })
+  .then(res => res.json())
+  .then(data => {
+    showSellModal(data.message);
+
+    // Найти карточку и заменить кнопки на "Вывод"
+    const allCards = document.querySelectorAll('.drop-card');
+    for (const card of allCards) {
+      const name = card.querySelector('h3')?.innerText;
+      const qual = card.querySelector('p')?.innerText;
+      if (name === skin && qual.includes(quality)) {
+        const buttons = card.querySelectorAll('button');
+        buttons.forEach(btn => btn.remove());
+
+        const withdrawLabel = document.createElement('span');
+        withdrawLabel.innerText = "Вывод";
+        withdrawLabel.style.color = '#1e90ff';
+        withdrawLabel.style.fontWeight = 'bold';
+        card.appendChild(withdrawLabel);
+      }
+    }
+
+    getUser(); // обновить баланс
+  });
+}
 
 function sellSkin(skin, quality, timestamp) {
   if (isSelling) return;

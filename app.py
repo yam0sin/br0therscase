@@ -8,7 +8,7 @@ import os
 
 import requests
 
-BASE_URL = 'https://script.google.com/macros/s/AKfycbwoI6PHGp_UqOMbnUrO3kiyBVUJi4Ur8yG5jktU60LWcXF1IsNS8tkxelWLXCl14TwXlg/exec'
+BASE_URL = 'https://script.google.com/macros/s/AKfycbw05PInvb1sppOcBFroZmzaKqb6Njv-H34LSsKCHJsPUEoogDQ8AfCxIMI80VICSWQT0A/exec'
 
 SHEET_SKINS_URL = BASE_URL + '?type=skins'
 SHEET_USER_URL = BASE_URL + '?type=users'
@@ -93,6 +93,31 @@ def history():
 
 
     return render_template('history.html', user={'username': username}, drops=user_drops[::-1])
+
+@app.route('/withdraw_skin', methods=['POST'])
+def withdraw_skin():
+    username = session.get('user_id')
+    if not username:
+        return jsonify({'message': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    skin_name = data.get('skin')
+    quality = data.get('quality')
+    timestamp = data.get('timestamp')
+
+    try:
+        # Отправляем запрос в таблицу истории с действием "withdraw"
+        requests.post(SHEET_HISTORY_URL, json={
+            "action": "mark_withdraw",
+            "username": username,
+            "skin": skin_name,
+            "quality": quality,
+            "timestamp": timestamp
+        })
+    except Exception as e:
+        return jsonify({'message': f'Ошибка вывода: {str(e)}'}), 500
+
+    return jsonify({'message': 'Скин отправлен на вывод!'})
 
 @app.route('/admin/users', methods=['GET', 'POST'])
 def admin_users():

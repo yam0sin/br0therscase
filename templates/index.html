@@ -27,6 +27,28 @@ p, span, a {
     text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
 }
 
+.user-panel {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.header {
+    width: 100%;
+    padding: 20px 40px;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 button, .case-button, .user-panel button {
     background: linear-gradient(135deg, #4600ff, #9b00ff);
     border: none;
@@ -312,6 +334,17 @@ button:hover, .case-button:hover, .user-panel button:hover {
     cursor: pointer;
 }
 
+.logo {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: white;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+}
+
 #modalDrop {
     opacity: 0;
     visibility: hidden;
@@ -340,9 +373,11 @@ button:hover, .case-button:hover, .user-panel button:hover {
 </head>
 <body>
 <div class="header">
-    <div class="logo">Br0thers Case</div>
-    <div class="user-panel" id="userPanel">
-        <button onclick="openLogin()">Войти</button>
+    <div class="header-inner">
+        <div class="logo">br0therscase</div>
+        <div class="user-panel" id="userPanel">
+            <button onclick="openLogin()">Войти</button>
+        </div>
     </div>
 </div>
 
