@@ -248,10 +248,12 @@ def open_case():
             'name': dropped_skin['Скин'],
             'rarity': dropped_skin['Редкость'],
             'image_url': dropped_skin['Фотография'],
-         'quality': dropped_skin.get('Качество', '')
+            'quality': dropped_skin.get('Качество', ''),
+            'price': dropped_skin.get('Цена', 0)  # ← добавляем цену
         },
         'balance': new_balance if user['username'] != 'admin' else user['balance']
     })
+
 
 
 

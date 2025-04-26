@@ -443,12 +443,18 @@ async function openCase() {
         <button class="close-btn" onclick="closeModal()">×</button>
         <h2>Выпал скин: ${data.skin.name}</h2>
         <p>Качество: ${data.skin.quality || 'Неизвестно'}</p>
+        <p>Цена: ${data.skin.price} очков</p>
         <img src="${data.skin.image_url}" alt="${data.skin.name}">
+        <br><br>
+        <button onclick="sellDroppedSkin('${data.skin.name}', '${data.skin.quality}', ${data.skin.price})">
+            Продать
+        </button>
     `;
     modal.classList.add('active');
 
     getUser();
 }, 5200);
+
 
 
 }
@@ -507,6 +513,24 @@ async function logout() {
 
 function closeModal() {
     document.getElementById('modalDrop').classList.remove('active');
+}
+
+async function sellDroppedSkin(name, quality, price) {
+    const res = await fetch('/sell_skin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skin: name, quality: quality, price: price })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+        alert(data.message);
+        closeModal();
+        getUser();
+    } else {
+        alert('Ошибка продажи: ' + data.message);
+    }
 }
 
 window.addEventListener('DOMContentLoaded', getUser);
