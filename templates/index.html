@@ -3,48 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <title>Br0thersCase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #111;
-            background-image: url('/static/bg-pattern.png'); /* путь к твоему фону */
-            background-repeat: repeat;
-            background-size: auto;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, #071eb3, #9b00ff);
+    background-attachment: fixed;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background-color: #222;
-        }
+h1, h2, h3 {
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: white;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+}
 
-        .logo {
-            font-size: 24px;
-        }
+p, span, a {
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+}
 
-        .user-panel button {
-            background: #444;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-        }
+button, .case-button, .user-panel button {
+    background: linear-gradient(135deg, #4600ff, #9b00ff);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    padding: 14px 28px;
+    font-size: 16px;
+    box-shadow: 0 0 14px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-        .case-button {
-            margin: 40px auto 20px;
-            padding: 18px 40px;
-            font-size: 22px;
-            background-color: #1e90ff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+button:hover, .case-button:hover, .user-panel button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #5d22ff, #b700ff);
+}
 
 .roller-wrapper {
     position: relative;
