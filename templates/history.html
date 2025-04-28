@@ -171,26 +171,28 @@
     <img src="{{ drop.image_url }}" alt="skin">
     <h3>{{ drop.skin }}</h3>
     <p>Качество: {{ drop.quality }}</p>
-    <p><small>{{ drop.timestamp }}</small></p>
+    <p><small class="timestamp">{{ drop.timestamp }}</small></p>
 
-{% if drop.status != 'Продан' and drop.status != 'Вывод' %}
-    <button onclick="sellSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">Продать</button>
-    <button onclick="withdrawSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">Вывести</button>
-{% elif drop.status == 'Продан' %}
+{% if drop.status == 'Продан' %}
     <span style="color: lightgreen; font-weight: bold;">Продано</span>
 {% elif drop.status == 'Вывод' %}
-    <span style="color: #1e90ff; font-weight: bold;">Вывод</span>
+    <span style="color: #1e90ff; font-weight: bold;">На выводе</span>
+{% elif drop.status == 'Получено' %}
+    <span style="color: gold; font-weight: bold;">Получено</span>
+{% else %}
+    <button onclick="sellSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">Продать</button>
+    <button onclick="withdrawSkin('{{ drop.skin }}', '{{ drop.quality }}', '{{ drop.timestamp }}')">Вывести</button>
 {% endif %}
-</div>
-{% endfor %}
-    </div>
-<!-- Модальное окно -->
+</div> <!-- <-- Вот здесь правильно закрываем карточку -->
+  {% endfor %}
+
 <div id="sellModal" class="modal" style="display: none;">
   <div class="modal-content">
     <span class="close" onclick="closeSellModal()">&times;</span>
-    <p id="sellResultText">Скин продан!</p>
+    <p id="sellResultText">Тут будет текст</p>
   </div>
 </div>
+
 <script>   
 let isSelling = false;
 
@@ -248,8 +250,8 @@ function sellSkin(skin, quality, timestamp) {
       const name = card.querySelector('h3')?.innerText;
       const qual = card.querySelector('p')?.innerText;
       if (name === skin && qual.includes(quality)) {
-        const btn = card.querySelector('button');
-        if (btn) btn.remove();
+        const buttons = card.querySelectorAll('button');
+        buttons.forEach(btn => btn.remove());
 
         const soldLabel = document.createElement('span');
         soldLabel.innerText = "Продано";
@@ -298,6 +300,26 @@ async function logout() {
 }
 
 window.addEventListener('DOMContentLoaded', getUser);
+
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+}
+
+// После загрузки страницы переформатируем все timestamp'ы
+window.addEventListener('DOMContentLoaded', () => {
+  const timestamps = document.querySelectorAll('.timestamp');
+  timestamps.forEach(el => {
+    el.innerText = formatDate(el.innerText);
+  });
+});
+
 </script>
 </body>
 </html>

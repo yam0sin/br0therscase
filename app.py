@@ -8,7 +8,7 @@ import os
 
 import requests
 
-BASE_URL = 'https://script.google.com/macros/s/AKfycbw05PInvb1sppOcBFroZmzaKqb6Njv-H34LSsKCHJsPUEoogDQ8AfCxIMI80VICSWQT0A/exec'
+BASE_URL = 'https://script.google.com/macros/s/AKfycbyz3VGF767i8FSqdyG8iRLSv2d3VaDUGyKXUAyO3MoQHuJMO7zDG8It8G0LGFNomlmXLg/exec'
 
 SHEET_SKINS_URL = BASE_URL + '?type=skins'
 SHEET_USER_URL = BASE_URL + '?type=users'
@@ -56,7 +56,8 @@ def send_to_google_sheet(user, dropped_skin):
                 "skin": dropped_skin['Скин'],
                 "rarity": dropped_skin['Редкость'],
                 "quality": dropped_skin.get('Качество', ''),
-                "image_url": dropped_skin.get('Фотография', '')  # ← оставляем 'Фотография', если именно так в скинах
+                "image_url": dropped_skin.get('Фотография', ''),
+                "price": dropped_skin.get('Цена', 0)  # <-- ДОБАВЬ ЭТУ СТРОЧКУ!!!
             }
         )
     except Exception as e:
