@@ -161,8 +161,9 @@
         </div>
     </div>
 </div>
-    <div style="text-align: center; margin-top: 40px;">
-    <a href="/" class="button">Вернуться на главную</a>
+<div style="margin-top: 20px;">
+    <button class="button" onclick="sellAll()">Продать все доступные</button>
+    <button class="button" onclick="withdrawAll()">Вывести все доступные</button>
 </div>
     <h1>История открытий — {{ user.username }}</h1>
     <div class="drop-history">
@@ -172,6 +173,7 @@
     <h3>{{ drop.skin }}</h3>
     <p>Качество: {{ drop.quality }}</p>
     <p><small class="timestamp">{{ drop.timestamp }}</small></p>
+    <p>Цена: {{ drop.price }} очков</p>
 
 {% if drop.status == 'Продан' %}
     <span style="color: lightgreen; font-weight: bold;">Продано</span>
@@ -319,6 +321,28 @@ window.addEventListener('DOMContentLoaded', () => {
     el.innerText = formatDate(el.innerText);
   });
 });
+
+function sellAll() {
+  if (confirm("Продать все доступные скины?")) {
+    fetch('/sell_all_skins', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        showSellModal(data.message);
+        setTimeout(() => location.reload(), 1500);
+      });
+  }
+}
+
+function withdrawAll() {
+  if (confirm("Вывести все доступные скины?")) {
+    fetch('/withdraw_all_skins', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        showSellModal(data.message);
+        setTimeout(() => location.reload(), 1500);
+      });
+  }
+}
 
 </script>
 </body>

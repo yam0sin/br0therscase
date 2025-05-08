@@ -89,7 +89,8 @@ def history():
                 'quality': row.get('Качество'),
                 'image_url': row.get('Фотография', ''),
                 'timestamp': row.get('Дата', ''),
-                'status': row.get('Статус', '')
+                'status': row.get('Статус', ''),
+                'price': row.get('Цена', '0')
             })
 
 
@@ -391,6 +392,103 @@ def sell_skin():
             return jsonify({'message': f'Скин продан за {price:.2f}!'})
 
     return jsonify({'message': 'Скин не найден или уже продан'}), 400
+
+@app.route('/sell_all_skins', methods=['POST'])
+def sell_all_skins():
+    username = session.get('user_id')
+    if not username:
+        return jsonify({'message': 'Unauthorized'}), 401
+
+    try:
+        skins = requests.get(SHEET_SKINS_URL).json()
+        users = load_users_from_sheet()
+        history = requests.get(SHEET_HISTORY_URL).json()
+    except Exception as e:
+        return jsonify({'message': 'Ошибка загрузки данных', 'error': str(e)}), 500
+
+    user = next((u for u in users if u['username'] == username), None)
+    if not user:
+        return jsonify({'message': 'Пользователь не найден'}), 404
+
+    updated = 0
+    for row in history:
+        if row.get('Пользователь') != username or row.get('Статус') in ['Продан', 'Вывод']:
+            continue
+
+        skin_name = row.get('Скин')
+        quality = row.get('Качество')
+        timestamp = row.get('Дата')
+        matched_skin = next((s for s in skins if s['Скин'] == skin_name and s['Качество'] == quality), None)
+
+        if not matched_skin or not matched_skin.get('Цена'):
+            continue
+
+        try:
+            price = float(str(matched_skin['Цена']).replace(',', '.'))
+        except:
+            continue
+
+        # обновляем баланс
+        user['balance'] += price
+        updated += 1
+
+        update_user_balance(username, user['balance'])
+
+        # вернуть скин в инвентарь
+        try:
+            requests.post(SHEET_SKINS_URL, json={
+                "action": "return_skin",
+                "skin": skin_name,
+                "quality": quality
+            })
+        except: pass
+
+        # отметить как проданный
+        try:
+            requests.post(SHEET_HISTORY_URL, json={
+                "action": "mark_sold",
+                "username": username,
+                "skin": skin_name,
+                "quality": quality,
+                "timestamp": timestamp
+            })
+        except: pass
+
+    return jsonify({'message': f'Продано {updated} скинов!'})
+
+@app.route('/withdraw_all_skins', methods=['POST'])
+def withdraw_all_skins():
+    username = session.get('user_id')
+    if not username:
+        return jsonify({'message': 'Unauthorized'}), 401
+
+    try:
+        history = requests.get(SHEET_HISTORY_URL).json()
+    except Exception as e:
+        return jsonify({'message': 'Ошибка загрузки истории', 'error': str(e)}), 500
+
+    updated = 0
+    for row in history:
+        if row.get('Пользователь') != username or row.get('Статус') in ['Продан', 'Вывод']:
+            continue
+
+        skin_name = row.get('Скин')
+        quality = row.get('Качество')
+        timestamp = row.get('Дата')
+
+        try:
+            requests.post(SHEET_HISTORY_URL, json={
+                "action": "mark_withdraw",
+                "username": username,
+                "skin": skin_name,
+                "quality": quality,
+                "timestamp": timestamp
+            })
+            updated += 1
+        except: pass
+
+    return jsonify({'message': f'Выведено {updated} скинов!'})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
